@@ -1,8 +1,9 @@
 /**
  * 아뉴스 청년회 회칙 개정안 실시간 투표 — 서버 코드 (Google Apps Script)
  *
- * 처음 한 번만: 편집기 위쪽 함수 선택 칸에서 setup 을 고르고 [실행] 을 누르세요.
+ * 처음 한 번만: 편집기 위쪽 [▶ 실행] 옆 함수 선택 칸이 'setup' 인지 확인하고 [▶ 실행] 을 누르세요.
  *   → 회원 / 조항 / 투표기록 / 결과 / 설정 탭이 자동으로 만들어집니다.
+ *   (시트 화면을 새로고침하면 위쪽 메뉴에 '🗳 회칙투표' 메뉴도 생깁니다. 거기서도 실행할 수 있습니다.)
  *
  * 화면 주소
  *   투표자:  배포한 /exec 주소
@@ -14,20 +15,17 @@ const CHOICES = { yes: '찬성', no: '반대', abstain: '기권' };
 const CACHE_SEC = 21600; // 6시간 (캐시 최대치)
 const LIST_CACHE_SEC = 300; // 회원·조항 목록은 5분마다 시트에서 다시 읽음
 
-/* ───────────── 화면 열기 ───────────── */
-
-function doGet(e) {
-  const isAdmin = e && e.parameter && e.parameter.admin;
-  const page = isAdmin ? 'Admin' : 'Vote';
-  return HtmlService.createHtmlOutputFromFile(page)
-    .setTitle(isAdmin ? '회칙 투표 · 관리자' : '아뉴스 청년회 회칙 투표')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
-}
-
 /* ───────────── 최초 설정 ───────────── */
 
 function setup() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // 시트에서 '확장 프로그램 → Apps Script' 로 열었으면 그 시트를, 아니면 새 시트를 만들어 사용
+  let ss = SpreadsheetApp.getActiveSpreadsheet();
+  const savedId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (!ss && savedId) ss = SpreadsheetApp.openById(savedId);
+  if (!ss) {
+    ss = SpreadsheetApp.create('회칙투표');
+    Logger.log('연결된 시트가 없어 새 시트를 만들었습니다 → ' + ss.getUrl());
+  }
   PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
 
   const members = ensureSheet_(ss, SHEETS.MEMBERS, ['이름', '전화번호 뒷 4자리']);
@@ -48,7 +46,36 @@ function setup() {
   set.getRange('B2').setNumberFormat('@');
 
   clearListCache_();
-  Logger.log('설정 완료! 회원 탭에 이름과 전화번호 뒷 4자리를 붙여넣은 뒤 웹 앱으로 배포하세요.');
+  const msg = '설정 완료! 시트에 회원/조항/투표기록/결과/설정 탭이 만들어졌습니다.\n'
+    + '회원 탭에 이름과 전화번호 뒷 4자리를 붙여넣은 뒤 웹 앱으로 배포하세요.\n시트 주소: ' + ss.getUrl();
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { /* 편집기에서 실행하면 알림창 없이 로그에만 표시 */ }
+}
+
+/** 시트를 열 때 위쪽 메뉴에 '🗳 회칙투표' 메뉴를 추가 */
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('🗳 회칙투표')
+    .addItem('① 초기 설정 (탭 만들기)', 'setup')
+    .addSeparator()
+    .addItem('모든 투표 기록 지우기 (리허설 후)', 'resetAllFromMenu')
+    .addToUi();
+}
+
+function resetAllFromMenu() {
+  const ui = SpreadsheetApp.getUi();
+  if (ui.alert('모든 투표 기록을 지울까요? 되돌릴 수 없습니다.', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  resetAll();
+  ui.alert('모든 투표 기록을 지웠습니다.');
+}
+
+/* ───────────── 화면 열기 (웹 앱) ───────────── */
+
+function doGet(e) {
+  const isAdmin = e && e.parameter && e.parameter.admin;
+  const page = isAdmin ? 'Admin' : 'Vote';
+  return HtmlService.createHtmlOutputFromFile(page)
+    .setTitle(isAdmin ? '회칙 투표 · 관리자' : '아뉴스 청년회 회칙 투표')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
 }
 
 function ensureSheet_(ss, name, header) {
