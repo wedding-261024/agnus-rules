@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회칙 투표 · 관리자</title>
+<style>
+  :root{
+    --bg:#f2f4f8; --card:#fff; --ink:#17243a; --muted:#66748a; --line:#e0e5ed; --brand:#1c4580;
+    --yes:#1e8a4f; --no:#cf3f35; --ab:#7a8494; --none:#d5dae2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;line-height:1.5;word-break:keep-all}
+  button{font:inherit;cursor:pointer}
+  .hidden{display:none!important}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  /* 로그인 */
+  #login{max-width:380px;margin:12vh auto;padding:0 16px}
+  #login h1{margin:0 0 14px;font-size:22px}
+  #login input{width:100%;font-size:18px;padding:13px;border:1.5px solid var(--line);border-radius:10px}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px}
+  .btn:hover{background:#f6f8fb}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:#163869}
+  .btn.go{background:var(--yes);border-color:var(--yes);color:#fff}
+  .btn.stop{background:var(--no);border-color:var(--no);color:#fff}
+  .btn.danger{color:var(--no)}
+  .btn.big{font-size:19px;padding:15px 24px;border-radius:12px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .err{color:var(--no);font-size:14px;margin-top:10px;min-height:1em}
+  /* 상단 */
+  .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line)}
+  .top h1{font-size:18px;margin:0;color:var(--brand)}
+  .link{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .link code{background:#f2f4f8;border-radius:8px;padding:7px 10px;color:var(--ink);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:18px;padding:18px 22px;max-width:1500px;margin:0 auto}
+  @media(max-width:900px){.layout{grid-template-columns:1fr;padding:14px}}
+  /* 조항 목록 */
+  .list{padding:8px}
+  .list h3{font-size:13px;color:var(--muted);margin:8px 10px 6px;font-weight:600}
+  .item{display:block;width:100%;text-align:left;border:0;background:none;border-radius:10px;padding:10px 11px;margin:2px 0}
+  .item:hover{background:#f4f6fa}
+  .item.cur{background:#e8eef8;box-shadow:inset 3px 0 0 var(--brand)}
+  .item .t{font-weight:600;font-size:14px}
+  .item .s{font-size:12px;color:var(--muted);margin-top:2px;display:flex;gap:8px;align-items:center}
+  .tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:#eef0f3;color:#5f6b7c}
+  .tag.open{background:#e3f1ff;color:#1662b8}
+  .tag.done{background:#e7f5ec;color:#14643a}
+  /* 메인 */
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:700;padding:6px 12px;border-radius:99px}
+  .chip.open{background:#e3f1ff;color:#1662b8}
+  .chip.open::before{content:'';width:9px;height:9px;border-radius:50%;background:#1f7ae0;animation:pulse 1.4s infinite}
+  .chip.closed{background:#eef0f3;color:#5f6b7c}
+  .chip.ready{background:#fff4dc;color:#946100}
+  @keyframes pulse{50%{opacity:.25}}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .ord{color:var(--muted);font-size:14px}
+  .title{font-size:34px;font-weight:800;margin:12px 0 6px;letter-spacing:-.5px}
+  .summary{font-size:18px;color:#3c4a60;margin:0 0 20px}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:600px){.tiles{grid-template-columns:repeat(2,1fr)}.title{font-size:26px}}
+  .tile{border-radius:14px;padding:16px;background:#f6f8fb;border:1px solid var(--line)}
+  .tile .l{font-size:15px;font-weight:700}
+  .tile .n{font-size:52px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+  .tile .p{font-size:14px;color:var(--muted)}
+  .tile.yes .l,.tile.yes .n{color:var(--yes)} .tile.no .l,.tile.no .n{color:var(--no)} .tile.abstain .l,.tile.abstain .n{color:#5f6b7c}
+  .tile.none .l,.tile.none .n{color:#9aa3b1}
+  .bar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:var(--none);margin:16px 0 6px}
+  .bar div{transition:width .4s}
+  .part{font-size:15px;color:var(--muted)}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;align-items:center}
+  .controls .sp{flex:1}
+  /* 기명 명단 */
+  .names{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+  @media(max-width:900px){.names{grid-template-columns:repeat(2,1fr)}}
+  .col h4{margin:0 0 8px;font-size:14px}
+  .col.yes h4{color:var(--yes)} .col.no h4{color:var(--no)} .col.abstain h4{color:#5f6b7c} .col.none h4{color:#9aa3b1}
+  .col .ns{display:flex;flex-wrap:wrap;gap:5px}
+  .nm{font-size:13px;padding:3px 9px;border-radius:99px;background:#f2f4f8}
+  .col.yes .nm{background:#e7f5ec;color:#14643a} .col.no .nm{background:#fbeceb;color:#9c2c24} .col.abstain .nm{background:#eef0f3}
+  .col.none .nm{background:#fff;border:1px dashed var(--none);color:#8a93a1}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#232c3b;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.on{opacity:1}
+  .stack>*+*{margin-top:18px}
+</style>
+</head>
+<body>
+
+<section id="login">
+  <div class="card">
+    <h1>관리자 로그인</h1>
+    <form id="loginForm">
+      <input id="pw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" required>
+      <button class="btn primary big" style="width:100%;margin-top:14px" id="loginBtn">들어가기</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <h1>아뉴스 청년회 · 회칙 개정 실시간 투표</h1>
+    <div class="link">투표 링크 <code id="voteUrl"></code>
+      <button class="btn" id="copy">링크 복사</button>
+      <button class="btn" id="sheet">시트 열기</button>
+      <button class="btn" id="csv">결과 다운로드</button>
+      <button class="btn" id="reload" title="시트에서 회원·조항을 고쳤을 때 누르세요">시트 변경 반영</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="card list" id="list"></aside>
+
+    <main class="stack">
+      <section class="card">
+        <div class="head"><span class="chip" id="chip"></span><span class="ord" id="ord"></span></div>
+        <div class="title" id="title"></div>
+        <p class="summary" id="summary"></p>
+
+        <div class="tiles">
+          <div class="tile yes"><div class="l">찬성</div><div class="n" id="nYes">0</div><div class="p" id="pYes"></div></div>
+          <div class="tile no"><div class="l">반대</div><div class="n" id="nNo">0</div><div class="p" id="pNo"></div></div>
+          <div class="tile abstain"><div class="l">기권(보류)</div><div class="n" id="nAb">0</div><div class="p" id="pAb"></div></div>
+          <div class="tile none"><div class="l">미투표</div><div class="n" id="nNone">0</div><div class="p">&nbsp;</div></div>
+        </div>
+        <div class="bar"><div id="bYes" style="background:var(--yes)"></div><div id="bNo" style="background:var(--no)"></div><div id="bAb" style="background:var(--ab)"></div></div>
+        <div class="part" id="part"></div>
+
+        <div class="controls" id="controls"></div>
+      </section>
+
+      <section class="card">
+        <div class="head"><b>기명 투표 현황</b><span class="ord">이름이 실시간으로 이동합니다</span></div>
+        <div class="names">
+          <div class="col yes"><h4 id="hYes">찬성</h4><div class="ns" id="lYes"></div></div>
+          <div class="col no"><h4 id="hNo">반대</h4><div class="ns" id="lNo"></div></div>
+          <div class="col abstain"><h4 id="hAb">기권(보류)</h4><div class="ns" id="lAb"></div></div>
+          <div class="col none"><h4 id="hNone">미투표</h4><div class="ns" id="lNone"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const STORE = 'agnus-vote-admin';
+  let pw = null, view = null, timer = null, busy = false, gen = 0;
+
+  function call(fn, ...args) {
+    return new Promise((resolve, reject) =>
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args));
+  }
+  function errMsg(e) { return String((e && e.message) || e).replace(/^Error:\s*/, ''); }
+  function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2200); }
+
+  /* ── 로그인 ── */
+  $('loginForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    $('loginBtn').disabled = true; $('loginErr').textContent = '';
+    try { const v = await call('apiAdmin', $('pw').value); pw = $('pw').value; try { localStorage.setItem(STORE, pw); } catch (e) {} start(v); }
+    catch (e) { $('loginErr').textContent = errMsg(e); }
+    finally { $('loginBtn').disabled = false; }
+  });
+  function start(v) { $('login').classList.add('hidden'); $('app').classList.remove('hidden'); render(v); schedule(); }
+
+  /* ── 그리기 ── */
+  function render(v) {
+    view = v;
+    $('voteUrl').textContent = v.voteUrl;
+    const arts = v.articles;
+    const idx = arts.findIndex(a => a.no === String(v.no));
+    const cur = arts[idx];
+
+    // 조항 목록
+    $('list').innerHTML = '<h3>투표 조항 (' + arts.length + '개) · 눌러서 이동</h3>' + arts.map(a => {
+      const isCur = a.no === String(v.no);
+      const st = isCur && v.status === 'open' ? '<span class="tag open">투표 중</span>'
+        : a.done ? '<span class="tag done">마감</span>' : '<span class="tag">대기</span>';
+      const c = a.counts, voted = c.yes + c.no + c.abstain;
+      const nums = voted ? `찬 ${c.yes} · 반 ${c.no} · 기 ${c.abstain}` : '';
+      return `<button class="item ${isCur ? 'cur' : ''}" data-no="${esc(a.no)}"><div class="t">${esc(a.title)}</div><div class="s">${st}<span>${nums}</span></div></button>`;
+    }).join('');
+    $('list').querySelectorAll('.item').forEach(b => b.onclick = () => {
+      if (b.dataset.no === String(view.no)) return;
+      const warn = view.status === 'open' ? '\n\n지금 진행 중인 투표는 마감됩니다.' : '';
+      if (confirm(`"${b.querySelector('.t').textContent}" 조항으로 이동할까요?${warn}`)) act('select', b.dataset.no);
+    });
+
+    // 현재 조항
+    const chip = $('chip');
+    chip.className = 'chip ' + v.status;
+    chip.textContent = v.status === 'open' ? '투표 진행 중' : v.status === 'closed' ? '마감됨' : '시작 전';
+    $('ord').textContent = cur ? `${idx + 1} / ${arts.length} 번째 조항` : '';
+    $('title').textContent = cur ? cur.title : '조항이 없습니다 (시트의 조항 탭 확인)';
+    $('summary').textContent = cur ? cur.summary : '';
+
+    const c = cur ? cur.counts : { yes: 0, no: 0, abstain: 0, none: v.memberCount };
+    const voted = c.yes + c.no + c.abstain;
+    const pct = n => voted ? Math.round(n * 100 / voted) + '%' : '';
+    $('nYes').textContent = c.yes; $('nNo').textContent = c.no; $('nAb').textContent = c.abstain; $('nNone').textContent = c.none;
+    $('pYes').textContent = pct(c.yes); $('pNo').textContent = pct(c.no); $('pAb').textContent = pct(c.abstain);
+    const w = n => (v.memberCount ? n * 100 / v.memberCount : 0) + '%';
+    $('bYes').style.width = w(c.yes); $('bNo').style.width = w(c.no); $('bAb').style.width = w(c.abstain);
+    $('part').textContent = `참여 ${voted} / ${v.memberCount}명` + (voted ? ` · 찬성률 ${pct(c.yes)} (투표자 기준)` : '');
+
+    // 버튼
+    const isLast = idx === arts.length - 1;
+    const nextTitle = !isLast && arts[idx + 1] ? arts[idx + 1].title : '';
+    let h = '';
+    if (v.status === 'ready') {
+      h += `<button class="btn go big" data-a="open">▶ 투표 시작</button>`;
+    } else if (v.status === 'open') {
+      h += `<button class="btn stop big" data-a="close">■ 투표 마감</button>`;
+      h += `<button class="btn primary big" data-a="next" ${isLast ? 'disabled' : ''}>마감하고 다음 조항 ▶</button>`;
+    } else {
+      h += `<button class="btn primary big" data-a="next" ${isLast ? 'disabled' : ''}>다음 조항 투표 시작 ▶</button>`;
+      h += `<button class="btn" data-a="open">이 조항 다시 열기</button>`;
+    }
+    h += `<span class="sp"></span>`;
+    if (nextTitle) h += `<span class="ord">다음: ${esc(nextTitle)}</span>`;
+    else if (cur) h += `<span class="ord">마지막 조항입니다</span>`;
+    h += `<button class="btn danger" data-a="reset">이 조항 표 초기화</button>`;
+    $('controls').innerHTML = h;
+    $('controls').querySelectorAll('[data-a]').forEach(b => b.onclick = () => onAction(b.dataset.a));
+
+    // 기명 명단
+    const groups = { yes: [], no: [], abstain: [], none: [] };
+    v.voters.forEach(p => groups[p.choice || 'none'].push(p.name));
+    const fill = (id, hid, label, arr) => {
+      $(hid).textContent = `${label} ${arr.length}`;
+      $(id).innerHTML = arr.map(n => `<span class="nm">${esc(n)}</span>`).join('') || '<span class="ord">—</span>';
+    };
+    fill('lYes', 'hYes', '찬성', groups.yes); fill('lNo', 'hNo', '반대', groups.no);
+    fill('lAb', 'hAb', '기권(보류)', groups.abstain); fill('lNone', 'hNone', '미투표', groups.none);
+  }
+
+  /* ── 동작 ── */
+  function onAction(a) {
+    if (a === 'reset' && !confirm('이 조항의 표를 모두 지우고 처음부터 다시 받을까요?')) return;
+    if (a === 'open' && view.status === 'closed' && !confirm('마감된 조항을 다시 열면 투표자가 선택을 다시 바꿀 수 있습니다. 계속할까요?')) return;
+    act(a);
+  }
+  async function act(a, no) {
+    if (busy) return;
+    busy = true; gen++;
+    document.querySelectorAll('.controls .btn, .item').forEach(b => b.disabled = true);
+    const msg = { open: '투표를 시작했습니다', close: '마감했습니다 · 시트에 저장됨', next: '다음 조항 투표를 시작했습니다', select: '조항을 이동했습니다', reset: '초기화했습니다', reload: '시트 내용을 다시 불러왔습니다' }[a];
+    try { const v = await call('apiAdminAction', pw, a, no || null); render(v); if (msg) toast(msg); }
+    catch (e) { alert(errMsg(e)); }
+    finally { busy = false; schedule(); if (view) render(view); }
+  }
+
+  $('copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(view.voteUrl); toast('투표 링크를 복사했습니다'); }
+    catch (e) { prompt('아래 링크를 복사하세요', view.voteUrl); }
+  };
+  $('sheet').onclick = () => window.open(view.sheetUrl, '_blank');
+  $('reload').onclick = () => act('reload');
+  $('csv').onclick = async () => {
+    try {
+      const rows = await call('apiExport', pw);
+      const csv = '﻿' + rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = '회칙투표결과.csv'; document.body.append(a); a.click(); a.remove();
+    } catch (e) { alert(errMsg(e)); }
+  };
+
+  /* ── 2초마다 자동 새로고침 ── */
+  function schedule() { clearTimeout(timer); timer = setTimeout(poll, 2000); }
+  async function poll() {
+    if (busy) return schedule();
+    const my = gen;
+    try { const v = await call('apiAdmin', pw); if (my === gen && !busy) render(v); } catch (e) {}
+    schedule();
+  }
+
+  (async () => {
+    let saved = null; try { saved = localStorage.getItem(STORE); } catch (e) {}
+    if (!saved) return;
+    try { const v = await call('apiAdmin', saved); pw = saved; start(v); } catch (e) {}
+  })();
+</script>
+</body>
+</html>
