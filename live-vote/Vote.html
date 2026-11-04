@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>아뉴스 청년회 회칙 투표</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --card:#fff; --ink:#18263a; --muted:#66748a; --line:#e1e6ee;
+    --brand:#1c4580; --yes:#1e8a4f; --yes-bg:#e7f5ec; --no:#cf3f35; --no-bg:#fbeceb;
+    --ab:#5f6b7c; --ab-bg:#eef0f3;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;
+    font-size:16px;line-height:1.55;word-break:keep-all}
+  .wrap{max-width:520px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+  header{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 14px}
+  header .brand{font-weight:700;color:var(--brand);font-size:15px}
+  header .who{font-size:14px;color:var(--muted)}
+  header .who button{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:13px;padding:4px;cursor:pointer}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;box-shadow:0 6px 20px rgba(20,40,80,.05)}
+  h1{font-size:23px;margin:0 0 6px;letter-spacing:-.3px}
+  .lead{color:var(--muted);margin:0 0 20px;font-size:15px}
+  label{display:block;font-weight:600;font-size:15px;margin:14px 0 6px}
+  input{width:100%;font-size:18px;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:#fbfcfe;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--brand);background:#fff}
+  .btn{width:100%;border:0;border-radius:14px;font-size:18px;font-weight:700;padding:16px;cursor:pointer}
+  .btn.primary{background:var(--brand);color:#fff;margin-top:22px}
+  .btn:disabled{opacity:.55}
+  .err{color:var(--no);font-size:14px;margin-top:12px;min-height:1em}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:5px 11px;border-radius:99px}
+  .chip.open{background:#e3f1ff;color:#1662b8}
+  .chip.open::before{content:'';width:8px;height:8px;border-radius:50%;background:#1f7ae0;animation:pulse 1.4s infinite}
+  .chip.closed{background:#eef0f3;color:#5f6b7c}
+  .chip.ready{background:#fff4dc;color:#946100}
+  @keyframes pulse{50%{opacity:.25}}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .meta .ord{font-size:13px;color:var(--muted)}
+  .title{font-size:22px;font-weight:800;margin:4px 0 10px;letter-spacing:-.3px}
+  .summary{background:#f5f7fb;border-radius:12px;padding:14px 15px;font-size:16px;margin-bottom:12px}
+  details{border:1px solid var(--line);border-radius:12px;margin-bottom:18px;background:#fff}
+  summary{cursor:pointer;padding:12px 15px;font-weight:600;font-size:15px;color:var(--brand);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:' ▾'}
+  details[open] summary::after{content:' ▴'}
+  .full{padding:0 15px 14px;font-size:14px}
+  .full h4{margin:12px 0 4px;font-size:13px;color:var(--muted)}
+  .full pre{white-space:pre-wrap;word-break:keep-all;margin:0;font:inherit;background:#fafbfd;border-radius:8px;padding:10px}
+  .full .after pre{background:#f0f7ff}
+  .choices{display:grid;gap:12px}
+  .choice{display:flex;align-items:center;justify-content:center;gap:10px;min-height:68px;border-radius:16px;
+    border:2px solid var(--line);background:#fff;font-size:21px;font-weight:800;cursor:pointer;color:var(--ink);transition:transform .08s}
+  .choice:active{transform:scale(.98)}
+  .choice .ic{font-size:22px}
+  .choice.yes.on{background:var(--yes);border-color:var(--yes);color:#fff}
+  .choice.no.on{background:var(--no);border-color:var(--no);color:#fff}
+  .choice.abstain.on{background:var(--ab);border-color:var(--ab);color:#fff}
+  .choice.yes:not(.on){color:var(--yes)} .choice.no:not(.on){color:var(--no)} .choice.abstain:not(.on){color:var(--ab)}
+  .choices.locked .choice{cursor:default;opacity:.45}
+  .choices.locked .choice.on{opacity:1}
+  .status{margin-top:16px;padding:13px 15px;border-radius:12px;font-size:15px;text-align:center}
+  .status.ok{background:var(--yes-bg);color:#14643a}
+  .status.saving{background:#eef3fb;color:var(--brand)}
+  .status.lock{background:#eef0f3;color:#4d5868}
+  .status.hint{background:#fff7e6;color:#7a5600}
+  .wait{text-align:center;padding:34px 10px}
+  .wait .big{font-size:44px;margin-bottom:8px}
+  .wait h2{margin:0 0 6px;font-size:20px}
+  .wait p{color:var(--muted);margin:0}
+  .next{margin-top:18px;font-size:14px;color:var(--muted)}
+  .offline{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#2b3444;color:#fff;
+    font-size:13px;padding:8px 14px;border-radius:99px;display:none}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="brand">아뉴스 청년회 · 회칙 개정 투표</span>
+    <span class="who hidden" id="who"><b id="whoName"></b>님 <button id="logout" type="button">로그아웃</button></span>
+  </header>
+
+  <!-- 로그인 -->
+  <section class="card" id="login">
+    <h1>투표 입장</h1>
+    <p class="lead">본인 이름과 전화번호 뒷 4자리를 입력하세요.</p>
+    <form id="loginForm" autocomplete="on">
+      <label for="name">이름</label>
+      <input id="name" name="name" placeholder="예: 홍길동" autocomplete="name" required maxlength="20">
+      <label for="pin">전화번호 뒷 4자리</label>
+      <input id="pin" name="pin" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="예: 1234" required>
+      <button class="btn primary" id="loginBtn" type="submit">입장하기</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </section>
+
+  <!-- 투표 화면 -->
+  <section class="card hidden" id="board">
+    <div class="meta"><span class="chip" id="chip"></span><span class="ord" id="ord"></span></div>
+
+    <div id="waitBox" class="wait hidden">
+      <div class="big">⏳</div>
+      <h2>잠시만 기다려 주세요</h2>
+      <p>발표자가 투표를 시작하면<br>이 화면이 자동으로 바뀝니다.</p>
+      <p class="next" id="waitNext"></p>
+    </div>
+
+    <div id="voteBox" class="hidden">
+      <div class="title" id="title"></div>
+      <div class="summary" id="summary"></div>
+      <details id="fullBox">
+        <summary>개정 전 · 개정 후 전문 보기</summary>
+        <div class="full">
+          <h4>개정 전</h4><pre id="before"></pre>
+          <div class="after"><h4>개정 후</h4><pre id="after"></pre></div>
+        </div>
+      </details>
+      <div class="choices" id="choices">
+        <button class="choice yes" data-c="yes" type="button"><span class="ic">⭕</span>찬성</button>
+        <button class="choice no" data-c="no" type="button"><span class="ic">❌</span>반대</button>
+        <button class="choice abstain" data-c="abstain" type="button"><span class="ic">➖</span>기권 (보류)</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+</div>
+<div class="offline" id="offline">연결이 불안정합니다… 다시 시도 중</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const LABEL = { yes: '찬성', no: '반대', abstain: '기권(보류)' };
+  const STORE = 'agnus-vote-user';
+  let me = null;          // {name, pin}
+  let view = null;        // 서버에서 받은 현재 상태
+  let gen = 0;            // 투표 버튼을 누를 때마다 증가 (오래된 응답 무시용)
+  let saving = null;      // 저장 중인 선택
+  let timer = null, fails = 0, lastNo = null;
+
+  function call(fn, ...args) {
+    return new Promise((resolve, reject) =>
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args));
+  }
+  function errMsg(e) { return String((e && e.message) || e).replace(/^Error:\s*/, ''); }
+
+  function save(u) { try { localStorage.setItem(STORE, JSON.stringify(u)); } catch (e) {} }
+  function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch (e) { return null; } }
+  function forget() { try { localStorage.removeItem(STORE); } catch (e) {} }
+
+  /* ── 로그인 ── */
+  $('loginForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const name = $('name').value.trim(), pin = $('pin').value.trim();
+    if (!/^\d{4}$/.test(pin)) { $('loginErr').textContent = '전화번호 뒷 4자리를 숫자로 입력해 주세요.'; return; }
+    $('loginBtn').disabled = true; $('loginBtn').textContent = '확인 중…'; $('loginErr').textContent = '';
+    try {
+      const v = await call('apiLogin', name, pin);
+      me = { name: v.name, pin }; save(me); enter(v);
+    } catch (e) {
+      $('loginErr').textContent = errMsg(e);
+    } finally {
+      $('loginBtn').disabled = false; $('loginBtn').textContent = '입장하기';
+    }
+  });
+
+  $('logout').addEventListener('click', () => {
+    forget(); me = null; clearTimeout(timer);
+    $('board').classList.add('hidden'); $('who').classList.add('hidden'); $('login').classList.remove('hidden');
+  });
+
+  function enter(v) {
+    $('login').classList.add('hidden'); $('board').classList.remove('hidden'); $('who').classList.remove('hidden');
+    $('whoName').textContent = me.name;
+    render(v); schedule();
+  }
+
+  /* ── 화면 그리기 ── */
+  function render(v) {
+    view = v;
+    const chip = $('chip');
+    chip.className = 'chip ' + v.status;
+    chip.textContent = v.status === 'open' ? '투표 진행 중' : v.status === 'closed' ? '투표 마감' : '대기 중';
+    $('ord').textContent = v.article ? `${v.order} / ${v.total} 번째 조항` : '';
+
+    const showVote = v.article && v.status !== 'ready';
+    $('waitBox').classList.toggle('hidden', showVote);
+    $('voteBox').classList.toggle('hidden', !showVote);
+    $('waitNext').textContent = v.article ? `다음 안건: ${v.article.title}` : '';
+    if (!showVote) return;
+
+    if (lastNo !== v.no) { $('fullBox').open = false; lastNo = v.no; }
+    $('title').textContent = v.article.title;
+    $('summary').textContent = v.article.summary;
+    $('before').textContent = v.article.before || '(신설 조항)';
+    $('after').textContent = v.article.after;
+
+    const picked = saving || v.myVote;
+    const locked = v.status !== 'open';
+    $('choices').classList.toggle('locked', locked);
+    document.querySelectorAll('.choice').forEach(b => {
+      b.classList.toggle('on', b.dataset.c === picked);
+      b.disabled = locked;
+    });
+
+    const s = $('status');
+    if (locked) {
+      s.className = 'status lock';
+      s.innerHTML = v.myVote ? `🔒 마감되었습니다. 내 선택: <b>${LABEL[v.myVote]}</b>` : '🔒 마감되었습니다. 이 조항에는 투표하지 않았어요.';
+    } else if (saving) {
+      s.className = 'status saving'; s.textContent = '저장 중…';
+    } else if (v.myVote) {
+      s.className = 'status ok';
+      s.innerHTML = `✓ 투표 완료 · 내 선택: <b>${LABEL[v.myVote]}</b><br><small>마감 전까지는 다른 버튼을 눌러 바꿀 수 있어요.</small>`;
+    } else {
+      s.className = 'status hint'; s.textContent = '찬성 · 반대 · 기권 중 하나를 눌러 주세요.';
+    }
+  }
+
+  /* ── 투표 ── */
+  document.querySelectorAll('.choice').forEach(btn => btn.addEventListener('click', async () => {
+    if (!view || view.status !== 'open') return;
+    const c = btn.dataset.c;
+    if (c === view.myVote && !saving) return;
+    const my = ++gen; saving = c; render(view);
+    try {
+      const v = await call('apiVote', me.name, me.pin, view.no, c);
+      if (my === gen) { saving = null; render(v); }
+    } catch (e) {
+      if (my === gen) {
+        saving = null; render(view);
+        alert(errMsg(e));
+        poll();
+      }
+    }
+  }));
+
+  /* ── 자동 새로고침 (3~4초마다) ── */
+  function schedule(ms) {
+    clearTimeout(timer);
+    const base = document.hidden ? 10000 : 3000;
+    timer = setTimeout(poll, ms != null ? ms : base + Math.random() * 1200 + Math.min(fails, 5) * 1000);
+  }
+  async function poll() {
+    if (!me) return;
+    const my = gen;
+    try {
+      const v = await call('apiState', me.name, me.pin);
+      fails = 0; $('offline').style.display = 'none';
+      if (my === gen && !saving) render(v);
+    } catch (e) {
+      fails++;
+      if (/맞지 않습니다/.test(errMsg(e))) { $('logout').click(); $('loginErr').textContent = errMsg(e); return; }
+      if (fails >= 2) $('offline').style.display = 'block';
+    }
+    schedule();
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && me) schedule(0); });
+
+  /* ── 시작: 저장된 로그인으로 자동 입장 ── */
+  (async () => {
+    const u = load();
+    if (!u) return;
+    $('name').value = u.name; $('pin').value = u.pin;
+    try { const v = await call('apiLogin', u.name, u.pin); me = u; enter(v); }
+    catch (e) { /* 로그인 화면 유지 */ }
+  })();
+</script>
+</body>
+</html>
