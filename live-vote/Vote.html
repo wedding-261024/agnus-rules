@@ -118,7 +118,7 @@
         <div class="full">
           <h4>개정 전</h4><pre id="before"></pre>
           <div class="after"><h4>개정 후</h4><pre id="after"></pre></div>
-          <p class="legend"><mark>노란색</mark> = 개정 전과 달라진 부분</p>
+          <p class="legend"><mark>노란색</mark> = 이번 개정으로 바뀌는 핵심 내용</p>
         </div>
       </details>
       <div class="choices" id="choices">
@@ -196,9 +196,8 @@
     if (lastNo !== v.no) { $('fullBox').open = false; lastNo = v.no; }
     $('title').textContent = v.article.title;
     $('summary').textContent = v.article.summary;
-    const hl = highlightDiff(v.article.before || '', v.article.after || '');
-    $('before').innerHTML = v.article.before ? hl[0] : '(신설 조항)';
-    $('after').innerHTML = hl[1];
+    $('before').textContent = v.article.before ? stripMarks(v.article.before) : '(신설 조항)';
+    $('after').innerHTML = renderHighlights(v.article.after || '');
 
     const picked = saving || v.myVote;
     const locked = v.status !== 'open';
@@ -222,45 +221,19 @@
     }
   }
 
-  /* ── 개정 전·후 비교: 바뀐 단어에 형광펜 표시 ── */
+  /* ── 형광펜 표시 ──
+     '개정 후' 문구에서 [[ ]] 로 감싼 부분을 노란 형광펜으로 칠합니다.
+     (시트 '조항' 탭 E열에서 [[ ]] 를 넣거나 빼면 표시 위치를 바꿀 수 있습니다.) */
   function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function tokenize(text) {
-    // [{w: 단어, s: 뒤따르는 공백}] + 맨 앞 공백
-    const lead = (text.match(/^\s*/) || [''])[0];
-    const toks = [];
-    text.slice(lead.length).replace(/(\S+)(\s*)/g, (_, w, s) => { toks.push({ w, s }); return ''; });
-    return { lead, toks };
+  function renderHighlights(text) {
+    return escHtml(text)
+      .replace(/\[\[([\s\S]*?)\]\]/g, (_, inner) => inner.split('\n').map(line => {
+        const m = line.match(/^(\s*)([\s\S]*?)(\s*)$/);
+        return m[1] + (m[2] ? '<mark>' + m[2] + '</mark>' : '') + m[3];
+      }).join('\n'))
+      .replace(/\[\[|\]\]/g, '');
   }
-  function markRuns(t, keep) {
-    let html = escHtml(t.lead), open = false;
-    t.toks.forEach((tok, i) => {
-      const changed = !keep[i];
-      if (changed && !open) { html += '<mark>'; open = true; }
-      html += escHtml(tok.w);
-      const nextChanged = i + 1 < t.toks.length && !keep[i + 1];
-      if (open && (!nextChanged || tok.s.includes('\n'))) { html += '</mark>'; open = false; }
-      html += escHtml(tok.s);
-    });
-    return html;
-  }
-  function highlightDiff(before, after) {
-    const A = tokenize(before), B = tokenize(after);
-    const a = A.toks.map(t => t.w), b = B.toks.map(t => t.w);
-    const n = a.length, m = b.length;
-    // 최장 공통 부분열(LCS)로 그대로 남은 단어를 찾고, 나머지를 '바뀐 부분'으로 표시
-    const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-    for (let i = n - 1; i >= 0; i--)
-      for (let j = m - 1; j >= 0; j--)
-        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    const keepA = new Array(n).fill(false), keepB = new Array(m).fill(false);
-    let i = 0, j = 0;
-    while (i < n && j < m) {
-      if (a[i] === b[j]) { keepA[i] = keepB[j] = true; i++; j++; }
-      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
-      else j++;
-    }
-    return [markRuns(A, keepA), markRuns(B, keepB)];
-  }
+  function stripMarks(text) { return String(text).replace(/\[\[|\]\]/g, ''); }
 
   /* ── 투표 ── */
   document.querySelectorAll('.choice').forEach(btn => btn.addEventListener('click', async () => {
